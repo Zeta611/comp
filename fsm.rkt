@@ -1,23 +1,30 @@
 #lang racket
-(provide make-fsm get-state get-transition step run-fsm)
+(provide make-fsm run-fsm)
 
-; `transition` is a procedure that returns a pair of the next state and output
-; when the current state and an input is given.
-(define (make-fsm initial-state transition)
-  (cons initial-state transition))
+; `transition` is a procedure that returns a next state when the current state
+; and an input is given, and 'transform' is a procedure that returns an input
+; processor when the current state and the next state is given.
+(define (make-fsm initial-state transition transform)
+  (cons initial-state (cons transition transform)))
 
 (define get-state car)
-(define get-transition cdr)
+(define get-transition cadr)
+(define get-transform cddr)
 
+; Returns an fsm with its state replaced with `next-state`.
 (define (set-state fsm next-state)
   (make-fsm next-state
-            (get-transition fsm)))
+            (get-transition fsm)
+            (get-transform fsm)))
 
-; Returns a pair of a next state and an output.
+; Returns a pair of a next state and an output of `fsm` when `input` is given.
 (define (step fsm input)
-  (let ((state (get-state fsm))
-        (transition (get-transition fsm)))
-    (transition state input)))
+  (let ((transition (get-transition fsm))
+        (transform (get-transform fsm))
+        (curr-state (get-state fsm)))
+    (let* ((next-state (transition curr-state input))
+           (output ((transform curr-state next-state) input)))
+      (cons next-state output))))
 
 ; Returns a list of outputs processed from `inputs`.
 (define (run-fsm fsm inputs)
@@ -32,33 +39,44 @@
               (cdr inputs))))))
 
 ; TEST CODE
-(define (code-trans state input)
+(define (code-transition state input)
   (match (cons state input)
     [(cons 'doc (or '@begin-doc '@show '@hide))
-     (error "Invalid transition -- CODE-TRANS" state input)]
-    [(cons 'doc '@end-doc)
-     (cons 'shown '@end-doc)]
-    [(cons 'doc text)
-     (cons 'doc text)]
+     (error "Invalid transition -- CODE-TRANSITION" state input)]
+    [(cons 'doc '@end-doc) 'shown]
+    [(cons 'doc text) 'doc]
+
     [(cons 'shown (or '@end-doc '@show))
-     (error "Invalid transition -- CODE-TRANS" state input)]
-    [(cons 'shown '@begin-doc)
-     (cons 'doc '@begin-doc)]
-    [(cons 'shown '@hide)
-     (cons 'hidden '@hide)]
-    [(cons 'shown text)
-     (cons 'shown text)]
+     (error "Invalid transition --  CODE-TRANSITION" state input)]
+    [(cons 'shown '@begin-doc) 'doc]
+    [(cons 'shown '@hide) 'hidden]
+    [(cons 'shown text) 'shown]
+
     [(cons 'hidden (or '@end-doc '@hide))
-     (error "Invalid transition -- CODE-TRANS" state input)]
-    [(cons 'hidden '@begin-doc)
-     (cons 'doc '@begin-doc)]
-    [(cons 'hidden '@show)
-     (cons 'shown '@show)]
-    [(cons 'hidden text)
-     (cons 'hidden text)]))
+     (error "Invalid transition -- CODE-TRANSITION" state input)]
+    [(cons 'hidden '@begin-doc) 'doc]
+    [(cons 'hidden '@show) 'shown]
+    [(cons 'hidden text) 'hidden]))
+
+(define (code-transform curr-state next-state)
+  (match (cons curr-state next-state)
+    [(cons s s)
+     identity]
+    [(cons 'doc 'shown)
+     identity]
+    [(cons 'doc 'hidden)
+     (error "Invalid transform -- CODE-TRANSFORM" curr-state next-state)]
+    [(cons 'shown 'doc)
+     identity]
+    [(cons 'shown 'hidden)
+     identity]
+    [(cons 'hidden 'doc)
+     identity]
+    [(cons 'hidden 'shown)
+     identity]))
 
 (define sample-fsm
-  (make-fsm 'shown code-trans))
+  (make-fsm 'shown code-transition code-transform))
 
 (display
   (run-fsm
