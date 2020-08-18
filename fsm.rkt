@@ -37,20 +37,3 @@
             (run-fsm
               (set-state fsm next-state)
               (cdr inputs))))))
-
-; (define (code-transform curr-state next-state)
-;   (match (cons curr-state next-state)
-;     [(cons s s)
-;      identity]
-;     [(cons 'doc 'shown)
-;      identity]
-;     [(cons 'doc 'hidden)
-;      (error "Invalid transform -- CODE-TRANSFORM" curr-state next-state)]
-;     [(cons 'shown 'doc)
-;      identity]
-;     [(cons 'shown 'hidden)
-;      identity]
-;     [(cons 'hidden 'doc)
-;      identity]
-;     [(cons 'hidden 'shown)
-;      identity]))
