@@ -65,23 +65,3 @@
     [(list '@begin-doc tl ...) (doc-process tl)]
     [(list '@begin-hide tl ...) (hide-process tl)]
     [else (code-process contents)]))
-
-; TEST CODE
-(display
-  (process
-    (list '@begin-doc
-          "Some doc"
-          "$F = ma$ *em"
-          "ph* __strong"
-          "__."
-          '@end-doc
-          "(define shown 0)"
-          '@begin-hide
-          "(define hidden 1)"
-          "(define hidden2 2)"
-          '@end-hide
-          "(define final x)"
-          '@begin-doc
-          "FOO"
-          '@end-doc)))
-(newline)

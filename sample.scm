@@ -2,9 +2,9 @@
 This is a document.
 @end-doc|#
 (define shown #t)
-;@hide
+;@begin-hide
 (define not-shown
   (+ 0 1 2))
-;@show
+;@end-hide
 (define (foo x)
   (+ 1 x))
